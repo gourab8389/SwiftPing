@@ -1,11 +1,14 @@
+"use client"
+import { ClientSideSuspense, RoomProvider } from '@liveblocks/react/suspense'
 import { Editor } from '@/components/editor/Editor'
 import Header from '@/components/shared/Header'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
-import React from 'react'
 
-const Document = () => {
-    return (
-        <div>
+const CollaborativeRoom = () => {
+  return (
+    <RoomProvider id="my-room">
+        <ClientSideSuspense fallback={<div>Loading…</div>}>
+            <div className="collaborative-room">
             <Header>
                 <div className="flex w-fit items-center justify-center gap-2">
                     <p>Share</p>
@@ -18,8 +21,10 @@ const Document = () => {
                 </SignedIn>
             </Header>
             <Editor />
-        </div>
-    )
+            </div>
+        </ClientSideSuspense>
+      </RoomProvider>
+  )
 }
 
-export default Document
+export default CollaborativeRoom
