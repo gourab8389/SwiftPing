@@ -1,25 +1,42 @@
-import { Editor } from '@/components/editor/Editor'
-import Header from '@/components/shared/Header'
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
-import React from 'react'
+import CollaborativeRoom from "@/components/shared/CollaborativeRoom";
+import { getDocument } from "@/lib/actions/room.actions";
+import { getClerkUsers } from "@/lib/actions/user.actions";
+import { currentUser } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation";
 
-const Document = () => {
-    return (
-        <div>
-            <Header>
-                <div className="flex w-fit items-center justify-center gap-2">
-                    <p>Share</p>
-                </div>
-                <SignedOut>
-                    <SignInButton />
-                </SignedOut>
-                <SignedIn>
-                    <UserButton />
-                </SignedIn>
-            </Header>
-            <Editor />
-        </div>
-    )
+const Document = async ({ params: { id } }: SearchParamProps) => {
+  const clerkUser = await currentUser();
+  if(!clerkUser) redirect('/sign-in');
+
+  const room = await getDocument({
+    roomId: id,
+    userId: clerkUser.emailAddresses[0].emailAddress,
+  });
+
+  if(!room) redirect('/');
+
+  const userIds = Object.keys(room.usersAccesses);
+  const users = await getClerkUsers({ userIds });
+
+  const usersData = users.map((user: User) => ({
+    ...user,
+    userType: room.usersAccesses[user.email]?.includes('room:write')
+      ? 'editor'
+      : 'viewer'
+  }))
+
+  const currentUserType = room.usersAccesses[clerkUser.emailAddresses[0].emailAddress]?.includes('room:write') ? 'editor' : 'viewer';
+
+  return (
+    <main className="flex w-full flex-col items-center">
+      <CollaborativeRoom 
+        roomId={id}
+        roomMetadata={room.metadata}
+        users={usersData}
+        currentUserType={currentUserType}
+      />
+    </main>
+  )
 }
 
 export default Document
